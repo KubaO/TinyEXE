@@ -91,4 +91,16 @@ Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wPa
     WindowProc = result
 End Function
 
+' This procedure is used only to support running from the IDE (F5 or Run->Start)
+[DebugOnly]
+Sub Main()
+    Dim pi As PROCESS_BASIC_INFORMATION
+    Dim pPeb As PEB
+    Dim rc As Long
+    NtQueryInformationProcess(-1, ProcessBasicInformation, pi, LenB(pi), 0)
+    pPeb = CType(Of PEB)(pi.PebBaseAddress)
+    rc = wWinMain(GetModuleHandle(0), 0, CType(Of RTL_USER_PROCESS_PARAMETERS)(pPeb.ProcessParameters).CommandLine.Buffer, SW_SHOW)
+    Debug.Print "Exit code: " ; rc
+End Sub
+
 End Module
