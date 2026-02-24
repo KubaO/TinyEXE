@@ -13,6 +13,7 @@
 	"project.dllRuntimeBinding": false,
 	"project.exportPath": "${SourcePath}\\Export",
 	"project.exportPathIsV2": true,
+	"project.featureFlagsUI2": 4294963711,
 	"project.forceDpiAwarenessAtStartup": "NONE",
 	"project.id": "{B0213529-8118-4815-AD76-65D1647B0509}",
 	"project.largeAddressAware": true,
