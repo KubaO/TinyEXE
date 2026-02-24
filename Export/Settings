@@ -1,0 +1,51 @@
+{
+	"compiler.disableArrayBoundsChecks": true,
+	"compiler.disableFPUErrorChecks": true,
+	"compiler.disableOverflowChecks": true,
+	"configuration.inherits": "Defaults",
+	"project.appTitle": "SmallEXE",
+	"project.buildPath": "${SourcePath}\\Build\\${ProjectName}_${Architecture}.${FileExtension}",
+	"project.buildType": "Standard EXE",
+	"project.codegenModel": "FAST",
+	"project.description": "TinyEXE",
+	"project.disablePackageVBA": false,
+	"project.disablePackageVBRUN": true,
+	"project.dllRuntimeBinding": false,
+	"project.exportPath": "${SourcePath}\\Export",
+	"project.exportPathIsV2": true,
+	"project.forceDpiAwarenessAtStartup": "NONE",
+	"project.id": "{B0213529-8118-4815-AD76-65D1647B0509}",
+	"project.largeAddressAware": true,
+	"project.name": "TinyEXE",
+	"project.optionExplicit": true,
+	"project.overrideEntryPoint": "RealMain",
+	"project.references": [
+		{
+			"autoCtlExt": true,
+			"id": "{1FCDB98D-617D-4995-9736-2ED0E4746A10}",
+			"isLocalPackage": true,
+			"licence": "CC0 1.0 Universal",
+			"name": "[IMPORTED] Windows Development Library for twinBASIC v9.1.606",
+			"path32": "/Packages/WinDevLib",
+			"path64": "/Packages/WinDevLib",
+			"publishedDate": "10-OCT-2025",
+			"publishedTime": "09:54:27",
+			"publisher": "fafalone",
+			"symbolId": "WinDevLib",
+			"versionBuild": "606",
+			"versionMajor": "9",
+			"versionMinor": "1",
+			"versionRevision": "0"
+		}
+	],
+	"project.settingsVersion": 1,
+	"project.startupObject": "Sub Main",
+	"project.warnings": {
+		"errors": [],
+		"hints": [],
+		"ignored": [],
+		"info": [],
+		"warnings": []
+	},
+	"runtime.useUnicodeStandardLibrary": true
+}
