@@ -19,10 +19,8 @@ End Function
 Public Function wWinMain(ByVal hInstance As LongPtr, ByVal hPrevInstance As LongPtr, _
                          ByVal pCmdLine As LongPtr, ByVal nCmdShow As Long) As Long
     
-    'CoInitializeEx(0, COINIT_APARTMENTTHREADED) 'Uncomment to use anything with COM
-    
-    Dim hr As Long = S_OK
-    
+    'CoInitializeEx 0, COINIT_APARTMENTTHREADED 'Uncomment to use anything with COM
+       
     Dim wcex As WNDCLASSEX
     wcex.cbSize = LenB(wcex)
     wcex.style = CS_HREDRAW Or CS_VREDRAW Or CS_DBLCLKS
@@ -33,32 +31,33 @@ Public Function wWinMain(ByVal hInstance As LongPtr, ByVal hPrevInstance As Long
     wcex.lpszMenuName = 1
     wcex.lpszClassName = StrPtr(wndClass)
     
-    RegisterClassEx(wcex)
+    RegisterClassEx wcex
     
-     m_hwnd = CreateWindowExW(0, StrPtr(wndClass), StrPtr(wndName), WS_OVERLAPPEDWINDOW, _
+    m_hwnd = CreateWindowEx(0, wndClass, wndName, WS_OVERLAPPEDWINDOW, _
                             CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, 0, 0, hInstance, ByVal 0)
-        hEdit = CreateWindowExW(0, StrPtr(WC_EDITW), 0, WS_CHILD Or WS_VISIBLE Or WS_BORDER Or ES_MULTILINE, _
-                                 50, 10, 285, 200, m_hwnd, 0, hInstance, ByVal 0)
-        hBtn = CreateWindowExW(0, StrPtr(WC_BUTTONW), 0, WS_CHILD Or WS_VISIBLE, _
-                                125, 215, 125, 40, m_hwnd, 101, hInstance, ByVal 0)
+    hEdit = CreateWindowEx(0, WC_EDITW, 0, WS_CHILD Or WS_VISIBLE Or WS_BORDER Or ES_MULTILINE, _
+                           50, 10, 285, 200, m_hwnd, 0, hInstance, ByVal 0)
+    hBtn = CreateWindowEx(0, WC_BUTTONW, 0, WS_CHILD Or WS_VISIBLE, _
+                          125, 215, 125, 40, m_hwnd, 101, hInstance, ByVal 0)
+    
+    Dim hFont As LongPtr = GetStockObject(DEFAULT_GUI_FONT)
+    SendMessage hEdit, WM_SETFONT, hFont, ByVal 1
+    SendMessage hBtn, WM_SETFONT, hFont, ByVal 1
         
-        SendMessage hEdit, WM_SETFONT, GetStockObject(DEFAULT_GUI_FONT), ByVal 1
-        SendMessage hBtn, WM_SETFONT, GetStockObject(DEFAULT_GUI_FONT), ByVal 1
+    SetWindowText hEdit, "Hello World!"
+    SetWindowText hBtn, "Click Me"
+    ShowWindow m_hwnd, SW_SHOW
+    UpdateWindow m_hwnd
         
-        SetWindowTextW hEdit, StrPtr("Hello World!")
-        SetWindowTextW hBtn, StrPtr("Click Me")
-        ShowWindow m_hwnd, SW_SHOW
-        UpdateWindow m_hwnd
+    Dim tMSG As MSG
+    While GetMessage(tMSG, 0, 0, 0)
+        TranslateMessage tMSG
+        DispatchMessage tMSG
+    Wend
         
-        Dim tMSG As MSG
-        While GetMessage(tMSG, 0, 0, 0)
-            TranslateMessage tMSG
-            DispatchMessage tMSG
-        Wend
+    UnregisterClass wndClass, hInstance
         
-        UnregisterClassW StrPtr(wndClass), hInstance
-        
-        'CoUninitialize()
+    'CoUninitialize
 End Function
 
 Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
@@ -67,11 +66,11 @@ Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wPa
     Select Case uMsg
         Case WM_COMMAND
             If LOWORD(wParam) = 101 Then
-                Dim cch As Long = GetWindowTextLengthW(hEdit)
+                Dim cch As Long = GetWindowTextLength(hEdit)
                 If cch > 0 Then
                     Dim buf As String = String$(cch + 1, 0)
-                    GetWindowTextW(hEdit, StrPtr(buf), cch + 1)
-                    MessageBoxW m_hwnd, StrPtr(buf), StrPtr("You typed..."), MB_OK
+                    GetWindowText hEdit, buf, cch + 1
+                    MessageBox m_hwnd, buf, "You typed...", MB_OK
                 End If
             End If
             
@@ -82,7 +81,7 @@ Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wPa
             End If
             
         Case WM_DESTROY
-            PostQuitMessage(0)
+            PostQuitMessage 0
             
         Case Else
             result = DefWindowProc(hWnd, uMsg, wParam, lParam)
