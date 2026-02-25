@@ -5,11 +5,27 @@ This is a simple Hello World app showing 2 things:
 
 <img width="377" height="292" alt="image" src="https://github.com/user-attachments/assets/742a94b3-9777-4ec7-8525-88bbee220807" />
 
-- A few people don't like that tB, unlike VB6, doesn't have a runtime DLL dependency; the Forms engine etc is built right into the exe. This makes the exe itself larger, even though a VB6 exe + msvbvm60.dll is roughly the same size as a tB exe. Why this 1.4MB difference matters with modern drive sizes and internet speeds, and most languages/toolchains starting even bigger, I don't know, but it's come up. This app demonstrates that it's not simply a twinBASIC inefficiency, and tB exes can be quite tiny: This app compiles to under 20kb for both 32 and 64bit despite having a GUI, dozens of APIs + constants, embedded version info, and 90 lines of code.
-- It accomplishes this using twinBASIC's ability to easily set your own entry point. Previously demonstrated and originally added for drivers, it's also applicable to regular GUI apps, just don't use Subsystem: Native. This forgoes any of the built in tools, making it even smaller than a non-GUI console app. But this means doing absolutely everything yourself. This presents an opportunity to learn how a Windows exe really works, starting with an actual entry point that's hidden and automatic even in a typical C app... the `wWinMain` or similar entry point isn't the *real* entry point, it's called by the real one, in C usually `wWinMainCRTStartup`. This is why if you try using `wWinMain` as the entry point in tB you'll get garbage for the arguments like command line... a real entry point has only one argument, a pointer to the PEB, it prepares the other arguments itself then calls `wWinMain`.\
-twinBASIC allows overriding this real entry point... if you wanted all the default background setup, that's what the normal Startup Object setting is for. The app continues from there to register its own custom top level window class, create it and some child controls, then run its own message pump: the core of a Win32 GUI app that listens for input and other messages in a loop that runs until the window is destroyed, triggering the exit process, which must be handled carefully to avoid the process lingering on in the background despite being finished. This is very similar to subclassing.
+- A few people don't like that tB, unlike VB6, doesn't have a runtime DLL dependency; the Forms engine etc is built right into the exe. This makes the exe itself larger, even though a VB6 exe + msvbvm60.dll is roughly the same size as a tB exe. Why this 1.4MB difference matters with modern drive sizes and internet speeds, and most languages/toolchains starting even bigger, I don't know, but it's come up.
+  This app demonstrates that it's not simply a twinBASIC inefficiency, and tB exes can be quite tiny: This app compiles to under 20kb for both 32 and 64bit despite having a GUI, dozens of APIs + constants, embedded version info, and 90 lines of code.
+- It accomplishes this using twinBASIC's ability to easily set your own entry point. Previously demonstrated and originally added for drivers, it's also applicable to regular GUI apps, just don't use Subsystem: Native. This forgoes any of the built in tools, making it even smaller than a non-GUI console app. But this means doing absolutely everything yourself. This presents an opportunity to learn how a Windows exe really works, starting with an actual entry point that's hidden and automatic even in a typical C app... the `wWinMain` or similar entry point isn't the *real* entry point, it's called by the real one, in C usually `wWinMainCRTStartup`. This is why if you try using `wWinMain` as the entry point in tB you'll get garbage for the arguments like command line... a real entry point has only one argument, a pointer to the PEB, it prepares the other arguments itself then calls `wWinMain`.
+  twinBASIC allows overriding this real entry point... if you wanted all the default background setup, that's what the normal Startup Object setting is for. The app continues from there to register its own custom top level window class, create it and some child controls, then run its own message pump: the core of a Win32 GUI app that listens for input and other messages in a loop that runs until the window is destroyed, triggering the exit process, which must be handled carefully to avoid the process lingering on in the background despite being finished. This is very similar to subclassing.
 
-This is the full app, requiring a Windows Development Library reference, (though you'll want the actual .twinproj as there's a lot of Project Settings changes to make this work):
+The following changes are required in the Project Settings to support this "tiny EXE" mode:
+
+1. Startup Object: **Sub Main**
+2. Override Entry Point: **RealMain**
+3. Runtime Binding Of DLL Declares: **NO**
+4. Disable Overflow Checks: **YES**
+5. Disable Array Bounds Checks: **YES**
+6. Disable FPU Error Checks: **YES**
+7. Codegen Model: **FAST**
+8. Large Address Aware (LAA): **YES**
+9. Feature Flags - continued, disable:
+   * Compress Runtime Class Dispatch Info
+   * Compress Runtime Error Tables
+   * Compress Misc Data
+
+This is the full app, requiring a Windows Development Library reference:
 
 ```vb
 Module MainModule
@@ -33,10 +49,8 @@ End Function
 Public Function wWinMain(ByVal hInstance As LongPtr, ByVal hPrevInstance As LongPtr, _
                          ByVal pCmdLine As LongPtr, ByVal nCmdShow As Long) As Long
     
-    'CoInitializeEx(0, COINIT_APARTMENTTHREADED) 'Uncomment to use anything with COM
-    
-    Dim hr As Long = S_OK
-    
+    'CoInitializeEx 0, COINIT_APARTMENTTHREADED 'Uncomment to use anything with COM
+       
     Dim wcex As WNDCLASSEX
     wcex.cbSize = LenB(wcex)
     wcex.style = CS_HREDRAW Or CS_VREDRAW Or CS_DBLCLKS
@@ -47,32 +61,33 @@ Public Function wWinMain(ByVal hInstance As LongPtr, ByVal hPrevInstance As Long
     wcex.lpszMenuName = 1
     wcex.lpszClassName = StrPtr(wndClass)
     
-    RegisterClassEx(wcex)
+    RegisterClassEx wcex
     
-     m_hwnd = CreateWindowExW(0, StrPtr(wndClass), StrPtr(wndName), WS_OVERLAPPEDWINDOW, _
+    m_hwnd = CreateWindowEx(0, wndClass, wndName, WS_OVERLAPPEDWINDOW, _
                             CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, 0, 0, hInstance, ByVal 0)
-        hEdit = CreateWindowExW(0, StrPtr(WC_EDITW), 0, WS_CHILD Or WS_VISIBLE Or WS_BORDER Or ES_MULTILINE, _
-                                 50, 10, 285, 200, m_hwnd, 0, hInstance, ByVal 0)
-        hBtn = CreateWindowExW(0, StrPtr(WC_BUTTONW), 0, WS_CHILD Or WS_VISIBLE, _
-                                125, 215, 125, 40, m_hwnd, 101, hInstance, ByVal 0)
+    hEdit = CreateWindowEx(0, WC_EDITW, 0, WS_CHILD Or WS_VISIBLE Or WS_BORDER Or ES_MULTILINE, _
+                           50, 10, 285, 200, m_hwnd, 0, hInstance, ByVal 0)
+    hBtn = CreateWindowEx(0, WC_BUTTONW, 0, WS_CHILD Or WS_VISIBLE, _
+                          125, 215, 125, 40, m_hwnd, 101, hInstance, ByVal 0)
+    
+    Dim hFont As LongPtr = GetStockObject(DEFAULT_GUI_FONT)
+    SendMessage hEdit, WM_SETFONT, hFont, ByVal 1
+    SendMessage hBtn, WM_SETFONT, hFont, ByVal 1
         
-        SendMessage hEdit, WM_SETFONT, GetStockObject(DEFAULT_GUI_FONT), ByVal 1
-        SendMessage hBtn, WM_SETFONT, GetStockObject(DEFAULT_GUI_FONT), ByVal 1
+    SetWindowText hEdit, "Hello World!"
+    SetWindowText hBtn, "Click Me"
+    ShowWindow m_hwnd, SW_SHOW
+    UpdateWindow m_hwnd
         
-        SetWindowTextW hEdit, StrPtr("Hello World!")
-        SetWindowTextW hBtn, StrPtr("Click Me")
-        ShowWindow m_hwnd, SW_SHOW
-        UpdateWindow m_hwnd
+    Dim tMSG As MSG
+    While GetMessage(tMSG, 0, 0, 0)
+        TranslateMessage tMSG
+        DispatchMessage tMSG
+    Wend
         
-        Dim tMSG As MSG
-        While GetMessage(tMSG, 0, 0, 0)
-            TranslateMessage tMSG
-            DispatchMessage tMSG
-        Wend
+    UnregisterClass wndClass, hInstance
         
-        UnregisterClassW StrPtr(wndClass), hInstance
-        
-        'CoUninitialize()
+    'CoUninitialize
 End Function
 
 Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
@@ -81,11 +96,11 @@ Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wPa
     Select Case uMsg
         Case WM_COMMAND
             If LOWORD(wParam) = 101 Then
-                Dim cch As Long = GetWindowTextLengthW(hEdit)
+                Dim cch As Long = GetWindowTextLength(hEdit)
                 If cch > 0 Then
                     Dim buf As String = String$(cch + 1, 0)
-                    GetWindowTextW(hEdit, StrPtr(buf), cch + 1)
-                    MessageBoxW m_hwnd, StrPtr(buf), StrPtr("You typed..."), MB_OK
+                    GetWindowText hEdit, buf, cch + 1
+                    MessageBox m_hwnd, buf, "You typed...", MB_OK
                 End If
             End If
             
@@ -96,14 +111,30 @@ Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wPa
             End If
             
         Case WM_DESTROY
-            PostQuitMessage(0)
-
+            PostQuitMessage 0
+            
         Case Else
             result = DefWindowProc(hWnd, uMsg, wParam, lParam)
     End Select
     
     WindowProc = result
 End Function
+
+' This procedure is used only to support running from the IDE (F5 or Run->Start)
+[DebugOnly]
+Sub Main()
+    Dim pi As PROCESS_BASIC_INFORMATION
+    Dim pPeb As PEB
+    Dim rc As Long
+    Dim qipr As NTSTATUS = NtQueryInformationProcess(-1, ProcessBasicInformation, pi, LenB(pi), 0)
+    If qipr = STATUS_SUCCESS Then
+        pPeb = CType(Of PEB)(pi.PebBaseAddress)
+        rc = wWinMain(GetModuleHandle(0), 0, CType(Of RTL_USER_PROCESS_PARAMETERS)(pPeb.ProcessParameters).CommandLine.Buffer, SW_SHOW)
+        Debug.Print "Exit code: " ; rc
+    Else
+        Debug.Print "NtQueryInformationProcess Failed, NTRESULT=" ; qipr
+    End If
+End Sub
 
 End Module
 ```
