@@ -96,10 +96,14 @@ Sub Main()
     Dim pi As PROCESS_BASIC_INFORMATION
     Dim pPeb As PEB
     Dim rc As Long
-    NtQueryInformationProcess(-1, ProcessBasicInformation, pi, LenB(pi), 0)
-    pPeb = CType(Of PEB)(pi.PebBaseAddress)
-    rc = wWinMain(GetModuleHandle(0), 0, CType(Of RTL_USER_PROCESS_PARAMETERS)(pPeb.ProcessParameters).CommandLine.Buffer, SW_SHOW)
-    Debug.Print "Exit code: " ; rc
+    Dim qipr As NTSTATUS = NtQueryInformationProcess(-1, ProcessBasicInformation, pi, LenB(pi), 0)
+    If qipr = STATUS_SUCCESS Then
+        pPeb = CType(Of PEB)(pi.PebBaseAddress)
+        rc = wWinMain(GetModuleHandle(0), 0, CType(Of RTL_USER_PROCESS_PARAMETERS)(pPeb.ProcessParameters).CommandLine.Buffer, SW_SHOW)
+        Debug.Print "Exit code: " ; rc
+    Else
+        Debug.Print "NtQueryInformationProcess Failed, NTRESULT=" ; qipr
+    End If
 End Sub
 
 End Module
